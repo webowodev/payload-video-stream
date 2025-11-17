@@ -1,218 +1,322 @@
-# Payload Plugin Template
+# Payload Video Streaming Plugin
 
-A template repo to create a [Payload CMS](https://payloadcms.com) plugin.
+A [Payload CMS](https://payloadcms.com) plugin that enables seamless video uploads directly to streaming providers from Payload upload collections. This plugin automatically handles video file uploads to streaming platforms, providing optimized video delivery for your Payload CMS applications.
 
-Payload is built with a robust infrastructure intended to support Plugins with ease. This provides a simple, modular, and reusable way for developers to extend the core capabilities of Payload.
+## Features
 
-To build your own Payload plugin, all you need is:
+- 🎥 Direct video uploads to streaming providers from Payload upload collections
+- ☁️ **Cloudflare Stream** support (currently available)
+- 🔌 Extensible adapter architecture for adding more streaming providers
+- 🔄 Automatic video processing and optimization
+- 📊 Stream metadata integration with Payload documents
+- 🎯 Type-safe configuration with TypeScript support
 
-- An understanding of the basic Payload concepts
-- And some JavaScript/Typescript experience
+## Supported Providers
 
-## Background
+Currently supported:
+- **Cloudflare Stream** - Complete integration with Cloudflare's video streaming platform
 
-Here is a short recap on how to integrate plugins with Payload, to learn more visit the [plugin overview page](https://payloadcms.com/docs/plugins/overview).
+Planned support:
+- Mux
+- AWS MediaConvert
+- Azure Media Services
+- Other streaming API providers
 
-### How to install a plugin
+## Installation
 
-To install any plugin, simply add it to your payload.config() in the Plugin array.
+```bash
+npm install payload-video-streaming
+# or
+yarn add payload-video-streaming
+# or
+pnpm add payload-video-streaming
+```
+
+## Quick Start
+
+### 1. Configure the Plugin
+
+Add the plugin to your `payload.config.ts`:
 
 ```ts
-import myPlugin from 'my-plugin'
+import { buildConfig } from 'payload/config'
+import { videoStreamingPlugin } from 'payload-video-streaming'
 
-export const config = buildConfig({
+export default buildConfig({
   plugins: [
-    // You can pass options to the plugin
-    myPlugin({
-      enabled: true,
+    videoStreamingPlugin({
+      collections: {
+        videos: {
+          adapter: 'cloudflare',
+          apiToken: process.env.CLOUDFLARE_API_TOKEN,
+          accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+        },
+      },
     }),
   ],
+  // ... rest of your config
 })
 ```
 
-### Initialization
+### 2. Environment Variables
 
-The initialization process goes in the following order:
+Create a `.env` file with your streaming provider credentials:
 
-1. Incoming config is validated
-2. **Plugins execute**
-3. Default options are integrated
-4. Sanitization cleans and validates data
-5. Final config gets initialized
+```env
+CLOUDFLARE_API_TOKEN=your_cloudflare_api_token
+CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id
+```
 
-## Building the Plugin
+### 3. Create a Video Collection
 
-When you build a plugin, you are purely building a feature for your project and then abstracting it outside of the project.
-
-### Template Files
-
-In the Payload [plugin template](https://github.com/payloadcms/payload/tree/main/templates/plugin), you will see a common file structure that is used across all plugins:
-
-1. root folder
-2. /src folder
-3. /dev folder
-
-#### Root
-
-In the root folder, you will see various files that relate to the configuration of the plugin. We set up our environment in a similar manner in Payload core and across other projects, so hopefully these will look familiar:
-
-- **README**.md\* - This contains instructions on how to use the template. When you are ready, update this to contain instructions on how to use your Plugin.
-- **package**.json\* - Contains necessary scripts and dependencies. Overwrite the metadata in this file to describe your Plugin.
-- .**eslint**.config.js - Eslint configuration for reporting on problematic patterns.
-- .**gitignore** - List specific untracked files to omit from Git.
-- .**prettierrc**.json - Configuration for Prettier code formatting.
-- **tsconfig**.json - Configures the compiler options for TypeScript
-- .**swcrc** - Configuration for SWC, a fast compiler that transpiles and bundles TypeScript.
-- **vitest**.config.js - Config file for Vitest, defining how tests are run and how modules are resolved
-
-**IMPORTANT\***: You will need to modify these files.
-
-#### Dev
-
-In the dev folder, you’ll find a basic payload project, created with `npx create-payload-app` and the blank template.
-
-**IMPORTANT**: Make a copy of the `.env.example` file and rename it to `.env`. Update the `DATABASE_URI` to match the database you are using and your plugin name. Update `PAYLOAD_SECRET` to a unique string.
-**You will not be able to run `pnpm/yarn dev` until you have created this `.env` file.**
-
-`myPlugin` has already been added to the `payload.config()` file in this project.
+The plugin works with Payload upload collections:
 
 ```ts
-plugins: [
-  myPlugin({
-    collections: {
-      posts: true,
+import type { CollectionConfig } from 'payload/types'
+
+export const Videos: CollectionConfig = {
+  slug: 'videos',
+  upload: {
+    mimeTypes: ['video/*'],
+  },
+  fields: [
+    {
+      name: 'title',
+      type: 'text',
+      required: true,
     },
-  }),
-]
+    {
+      name: 'description',
+      type: 'textarea',
+    },
+  ],
+}
 ```
 
-Later when you rename the plugin or add additional options, **make sure to update it here**.
+## Configuration Options
 
-You may wish to add collections or expand the test project depending on the purpose of your plugin. Just make sure to keep this dev environment as simplified as possible - users should be able to install your plugin without additional configuration required.
-
-When you’re ready to start development, initiate the project with `pnpm/npm/yarn dev` and pull up [http://localhost:3000](http://localhost:3000) in your browser.
-
-#### Src
-
-Now that we have our environment setup and we have a dev project ready to - it’s time to build the plugin!
-
-**index.ts**
-
-The essence of a Payload plugin is simply to extend the payload config - and that is exactly what we are doing in this file.
+### Plugin Options
 
 ```ts
-export const myPlugin =
-  (pluginOptions: MyPluginConfig) =>
-  (config: Config): Config => {
-    // do cool stuff with the config here
-
-    return config
+type VideoStreamingPluginConfig = {
+  collections?: {
+    [collectionSlug: string]: {
+      adapter: 'cloudflare' // More providers coming soon
+      apiToken: string
+      accountId: string
+      enabled?: boolean
+    }
   }
-```
-
-First, we receive the existing payload config along with any plugin options.
-
-From here, you can extend the config as you wish.
-
-Finally, you return the config and that is it!
-
-##### Spread Syntax
-
-Spread syntax (or the spread operator) is a feature in JavaScript that uses the dot notation **(...)** to spread elements from arrays, strings, or objects into various contexts.
-
-We are going to use spread syntax to allow us to add data to existing arrays without losing the existing data. It is crucial to spread the existing data correctly – else this can cause adverse behavior and conflicts with Payload config and other plugins.
-
-Let’s say you want to build a plugin that adds a new collection:
-
-```ts
-config.collections = [
-  ...(config.collections || []),
-  // Add additional collections here
-]
-```
-
-First we spread the `config.collections` to ensure that we don’t lose the existing collections, then you can add any additional collections just as you would in a regular payload config.
-
-This same logic is applied to other properties like admin, hooks, globals:
-
-```ts
-config.globals = [
-  ...(config.globals || []),
-  // Add additional globals here
-]
-
-config.hooks = {
-  ...(incomingConfig.hooks || {}),
-  // Add additional hooks here
+  enabled?: boolean
 }
 ```
 
-Some properties will be slightly different to extend, for instance the onInit property:
+### Cloudflare Stream Configuration
 
+To use Cloudflare Stream:
+
+1. Sign up for [Cloudflare Stream](https://www.cloudflare.com/products/cloudflare-stream/)
+2. Get your Account ID from the Cloudflare dashboard
+3. Create an API token with Stream permissions
+4. Add credentials to your environment variables
+
+## Development
+
+### Prerequisites
+
+- Node.js 18+ 
+- pnpm (recommended) or npm/yarn
+- A Payload CMS project for testing
+
+### Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/webowodev/payload-video-stream.git
+cd payload-video-streaming
+```
+
+2. Install dependencies:
+```bash
+pnpm install
+```
+
+3. Set up the dev environment:
+```bash
+cd dev
+cp .env.example .env
+```
+
+4. Update the `.env` file with your configuration:
+```env
+DATABASE_URI=postgres://root:secret@127.0.0.1:5432/videostream
+PAYLOAD_SECRET=your-secret-key
+CLOUDFLARE_API_TOKEN=your_cloudflare_api_token
+CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id
+```
+
+5. Start the development server:
+```bash
+pnpm dev
+```
+
+The dev server will be available at [http://localhost:3000](http://localhost:3000)
+
+### Project Structure
+
+```
+payload-video-streaming/
+├── src/
+│   ├── index.ts              # Main plugin export
+│   ├── adapters/
+│   │   ├── streamAdapter.ts  # Base adapter interface
+│   │   ├── cloudflareStream.ts # Cloudflare implementation
+│   │   └── types.ts          # Adapter type definitions
+│   ├── fields/
+│   │   └── stream.ts         # Custom field definitions
+│   └── hooks/
+│       └── afterOperation.ts # Upload hooks
+├── dev/                      # Development Payload instance
+│   ├── payload.config.ts
+│   └── app/                  # Next.js app router
+└── test-results/             # Test output
+```
+
+### Testing
+
+Run the test suite:
+
+```bash
+pnpm test
+```
+
+Run tests in watch mode:
+```bash
+pnpm test:watch
+```
+
+Run integration tests:
+```bash
+pnpm test:int
+```
+
+Run E2E tests:
+```bash
+pnpm test:e2e
+```
+
+### Building
+
+Build the plugin for production:
+
+```bash
+pnpm build
+```
+
+## Contributing
+
+We welcome contributions! Here's how you can help:
+
+### Adding a New Streaming Provider
+
+1. Create a new adapter in `src/adapters/`:
 ```ts
-import { onInitExtension } from './onInitExtension' // example file
+// src/adapters/yourProvider.ts
+import type { StreamAdapter } from './streamAdapter'
 
-config.onInit = async (payload) => {
-  if (incomingConfig.onInit) await incomingConfig.onInit(payload)
-  // Add additional onInit code by defining an onInitExtension function
-  onInitExtension(pluginOptions, payload)
+export class YourProviderAdapter implements StreamAdapter {
+  async upload(file: File): Promise<StreamResult> {
+    // Implement upload logic
+  }
+  
+  async delete(videoId: string): Promise<void> {
+    // Implement delete logic
+  }
 }
 ```
 
-If you wish to add to the onInit, you must include the **async/await**. We don’t use spread syntax in this case, instead you must await the existing `onInit` before running additional functionality.
+2. Export your adapter in `src/adapters/index.ts`
 
-In the template, we have stubbed out some addition `onInit` actions that seeds in a document to the `plugin-collection`, you can use this as a base point to add more actions - and if not needed, feel free to delete it.
+3. Add configuration types in `src/adapters/types.ts`
 
-##### Types.ts
+4. Write tests for your adapter
 
-If your plugin has options, you should define and provide types for these options.
+5. Update documentation
 
-```ts
-export type MyPluginConfig = {
-  /**
-   * List of collections to add a custom field
-   */
-  collections?: Partial<Record<CollectionSlug, true>>
-  /**
-   * Disable the plugin
-   */
-  disabled?: boolean
-}
-```
+### Contribution Guidelines
 
-If possible, include JSDoc comments to describe the options and their types. This allows a developer to see details about the options in their editor.
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass: `pnpm test`
+6. Commit your changes: `git commit -m 'Add amazing feature'`
+7. Push to the branch: `git push origin feature/amazing-feature`
+8. Open a Pull Request
 
-##### Testing
+### Code Style
 
-Having a test suite for your plugin is essential to ensure quality and stability. **Vitest** is a fast, modern testing framework that works seamlessly with Vite and supports TypeScript out of the box.
+- Follow the existing code style
+- Use TypeScript for all new code
+- Add JSDoc comments for public APIs
+- Run `pnpm lint` before committing
 
-Vitest organizes tests into test suites and cases, similar to other testing frameworks. We recommend creating individual tests based on the expected behavior of your plugin from start to finish.
+### Commit Messages
 
-Writing tests with Vitest is very straightforward, and you can learn more about how it works in the [Vitest documentation.](https://vitest.dev/)
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
-For this template, we stubbed out `int.spec.ts` in the `dev` folder where you can write your tests.
+- `feat:` New features
+- `fix:` Bug fixes
+- `docs:` Documentation changes
+- `test:` Test additions or changes
+- `refactor:` Code refactoring
+- `chore:` Maintenance tasks
 
-```ts
-describe('Plugin tests', () => {
-  // Create tests to ensure expected behavior from the plugin
-  it('some condition that must be met', () => {
-   // Write your test logic here
-   expect(...)
-  })
-})
-```
+## Roadmap
 
-## Best practices
+- [x] Cloudflare Stream adapter
+- [ ] Mux adapter
+- [ ] AWS MediaConvert adapter
+- [ ] Azure Media Services adapter
+- [ ] Video thumbnail generation
+- [ ] Webhook support for processing status
+- [ ] Custom video player integration
+- [ ] Analytics integration
 
-With this tutorial and the plugin template, you should have everything you need to start building your own plugin.
-In addition to the setup, here are other best practices aim we follow:
+## License
 
-- **Providing an enable / disable option:** For a better user experience, provide a way to disable the plugin without uninstalling it. This is especially important if your plugin adds additional webpack aliases, this will allow you to still let the webpack run to prevent errors.
-- **Include tests in your GitHub CI workflow**: If you’ve configured tests for your package, integrate them into your workflow to run the tests each time you commit to the plugin repository. Learn more about [how to configure tests into your GitHub CI workflow.](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs)
-- **Publish your finished plugin to NPM**: The best way to share and allow others to use your plugin once it is complete is to publish an NPM package. This process is straightforward and well documented, find out more [creating and publishing a NPM package here.](https://docs.npmjs.com/creating-and-publishing-scoped-public-packages/).
-- **Add payload-plugin topic tag**: Apply the tag **payload-plugin **to your GitHub repository. This will boost the visibility of your plugin and ensure it gets listed with [existing payload plugins](https://github.com/topics/payload-plugin).
-- **Use [Semantic Versioning](https://semver.org/) (SemVar)** - With the SemVar system you release version numbers that reflect the nature of changes (major, minor, patch). Ensure all major versions reference their Payload compatibility.
+MIT License - see the [LICENSE](LICENSE) file for details.
 
-# Questions
+Copyright (c) 2025
 
-Please contact [Payload](mailto:dev@payloadcms.com) with any questions about using this plugin template.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+## Support
+
+- 📖 [Documentation](https://github.com/webowodev/payload-video-stream#readme)
+- 🐛 [Issue Tracker](https://github.com/webowodev/payload-video-stream/issues)
+- 💬 [Discussions](https://github.com/webowodev/payload-video-stream/discussions)
+
+## Acknowledgments
+
+Built with [Payload CMS](https://payloadcms.com) - The most powerful TypeScript headless CMS.
+
+---
+
+Made with ❤️ by [webowodev](https://webowo.dev)

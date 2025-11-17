@@ -1,0 +1,29 @@
+feature:
+  - head-branch: ["feat/*"]
+
+bug:
+  - head-branch: ["fix/*"]
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file: ["docs/**", "**/*.md"]
+
+test:
+  - changed-files:
+      - any-glob-to-any-file: ["tests/**"]
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: [".github/**", "Jenkinsfile"]
+
+refactor:
+  - head-branch: ["refactor/*"]
+
+performance:
+  - head-branch: ["perf/*"]
+
+security:
+  - head-branch: ["sec/*"]
+
+release:
+  - head-branch: ["rel/*"]
