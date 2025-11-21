@@ -51,6 +51,8 @@ jobs:
           path: dist/
           retention-days: 7
       - name: Semantic Release
+        # skip on pull requests
+        if: github.event_name != 'pull_request'
         uses: cycjimmy/semantic-release-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
