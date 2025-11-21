@@ -5,7 +5,7 @@ import type { StreamAdapter } from './adapters/streamAdapter.js'
 import { streamField } from './fields/stream.js'
 import { copyVideo, updateStatusHook } from './hooks/afterOperation.js'
 
-export type PayloadVideoStreamingConfig = {
+export type VideoStreamConfig = {
   /**
    * List of collections to add a custom field
    */
@@ -15,8 +15,8 @@ export type PayloadVideoStreamingConfig = {
   requiresSignedURLs?: boolean
 }
 
-export const payloadVideoStreaming =
-  (pluginOptions: PayloadVideoStreamingConfig) =>
+export const videoStream =
+  (pluginOptions: VideoStreamConfig) =>
   (config: Config): Config => {
     config.collections ??= []
 

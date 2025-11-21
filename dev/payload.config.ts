@@ -1,11 +1,10 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
-import { r2Storage } from '@payloadcms/storage-r2'
 import { s3Storage } from '@payloadcms/storage-s3'
 import { MongoMemoryReplSet } from 'mongodb-memory-server'
 import path from 'path'
 import { buildConfig } from 'payload'
-import { payloadVideoStreaming } from 'payload-video-streaming'
+import { videoStream } from 'payload-video-streaming'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
@@ -92,7 +91,7 @@ const buildConfigWithMemoryDB = async () => {
           expiresIn: 60 * 60 * 24,
         }, // enable signed download URLs
       }),
-      payloadVideoStreaming({
+      videoStream({
         collections: {
           media: true,
         },

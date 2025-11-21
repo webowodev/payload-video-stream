@@ -25,11 +25,11 @@ Planned support:
 ## Installation
 
 ```bash
-npm install payload-video-streaming
+npm install payload-video-stream
 # or
-yarn add payload-video-streaming
+yarn add payload-video-stream
 # or
-pnpm add payload-video-streaming
+pnpm add payload-video-stream
 ```
 
 ## Quick Start
@@ -40,18 +40,44 @@ Add the plugin to your `payload.config.ts`:
 
 ```ts
 import { buildConfig } from 'payload/config'
-import { videoStreamingPlugin } from 'payload-video-streaming'
+import { videoStream } from 'payload-video-stream'
 
 export default buildConfig({
   plugins: [
-    videoStreamingPlugin({
+    // configure your s3 storage configuration
+    s3Storage({
+      bucket: process.env.S3_BUCKET ?? 'romonoa',
+      clientUploads: true, // enable client-side uploads
       collections: {
-        videos: {
-          adapter: 'cloudflare',
-          apiToken: process.env.CLOUDFLARE_API_TOKEN,
-          accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
-        },
+        video: true,
       },
+      config: {
+        credentials: {
+          accessKeyId: process.env.S3_ACCESS_KEY_ID ?? '',
+          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? '',
+        },
+        endpoint: process.env.S3_ENDPOINT,
+        region: process.env.S3_REGION,
+        // ... Other S3 configuration
+      },
+      signedDownloads: {
+        // expires in 24 hours
+        expiresIn: 60 * 60 * 24,
+      }, // enable signed download URLs
+    }),    
+
+    // configure video stream plugin
+    videoStream({
+      collections: {
+        media: true,
+      },
+
+      // configure default adapter, currently only support cloudflare stream adapter
+      defaultAdapter: cloudflareStreamAdapter({
+        accountId: process.env.CLOUDFLARE_STREAM_ACCOUNT_ID || '',
+        apiToken: process.env.CLOUDFLARE_STREAM_API_TOKEN || '',
+        requiresSignedURLs: true // OPTIONAL: enable this if you enabled the signed downloads on your storage so the plugin will use the signed s3 url to the cloudflare stream copy video url function
+      }),
     }),
   ],
   // ... rest of your config
@@ -63,8 +89,8 @@ export default buildConfig({
 Create a `.env` file with your streaming provider credentials:
 
 ```env
-CLOUDFLARE_API_TOKEN=your_cloudflare_api_token
-CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id
+CLOUDFLARE_STREAM_API_TOKEN=your_cloudflare_api_token
+CLOUDFLARE_STREAM_ACCOUNT_ID=your_cloudflare_account_id
 ```
 
 ### 3. Create a Video Collection
@@ -98,16 +124,14 @@ export const Videos: CollectionConfig = {
 ### Plugin Options
 
 ```ts
-type VideoStreamingPluginConfig = {
+type VideoStreamConfig = {
   collections?: {
-    [collectionSlug: string]: {
-      adapter: 'cloudflare' // More providers coming soon
-      apiToken: string
-      accountId: string
-      enabled?: boolean
-    }
+    [collectionSlug: string]: boolean
   }
   enabled?: boolean
+  defaultAdapter: StreamAdapter
+  disabled?: boolean
+  requiresSignedURLs?: boolean
 }
 ```
 
@@ -151,8 +175,8 @@ cp .env.example .env
 ```env
 DATABASE_URI=postgres://root:secret@127.0.0.1:5432/videostream
 PAYLOAD_SECRET=your-secret-key
-CLOUDFLARE_API_TOKEN=your_cloudflare_api_token
-CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id
+CLOUDFLARE_STREAM_API_TOKEN=your_cloudflare_api_token
+CLOUDFLARE_STREAM_ACCOUNT_ID=your_cloudflare_account_id
 ```
 
 5. Start the development server:
