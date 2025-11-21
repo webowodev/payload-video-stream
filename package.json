@@ -14,6 +14,11 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./adapters": {
+      "import": "./src/adapters/index.ts",
+      "types": "./src/adapters/index.ts",
+      "default": "./src/adapters/index.ts"
+    },
     "./client": {
       "import": "./src/exports/client.ts",
       "types": "./src/exports/client.ts",
@@ -99,6 +104,11 @@
         "import": "./dist/index.js",
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
+      },
+      "./adapters": {
+        "import": "./dist/adapters/index.js",
+        "types": "./dist/adapters/index.d.ts",
+        "default": "./dist/adapters/index.js"
       },
       "./client": {
         "import": "./dist/exports/client.js",
