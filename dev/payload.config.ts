@@ -8,7 +8,7 @@ import { videoStream } from 'payload-video-streaming'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
-import { cloudflareStreamAdapter } from '../src/adapters/cloudflareStream.js'
+import { cloudflareStreamAdapter } from '../src/adapters/index.js'
 import { testEmailAdapter } from './helpers/testEmailAdapter.js'
 import { seed } from './seed.js'
 

@@ -41,6 +41,7 @@ Add the plugin to your `payload.config.ts`:
 ```ts
 import { buildConfig } from 'payload/config'
 import { videoStream } from 'payload-video-stream'
+import { cloudflareStreamAdapter } from 'payload-video-stream/adapters'
 
 export default buildConfig({
   plugins: [
