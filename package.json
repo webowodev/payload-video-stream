@@ -1,7 +1,7 @@
 {
   "name": "payload-video-stream",
   "version": "1.0.9",
-  "description": "A blank template to get started with Payload 3.0",
+  "description": "Payload CMS plugin for streaming video uploads to cloud providers like Cloudflare Stream",
   "license": "MIT",
   "type": "module",
   "repository": "https://github.com/webowodev/payload-video-stream",

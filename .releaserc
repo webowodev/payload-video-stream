@@ -27,6 +27,10 @@
     [
       "@semantic-release/git",
       {
+        "assets": [
+          "dist/**/*.{html,css,scss,ttf,woff,woff2,eot,svg,jpg,png,json}",
+          "package.json"
+        ],
         "message": "chore(release): ${nextRelease.version}"
       }
     ]
