@@ -1,4 +1,4 @@
-# GitHub Copilot Instructions: payload-video-streaming
+# GitHub Copilot Instructions: payload-video-stream
 
 ## Project Overview
 
@@ -19,6 +19,7 @@ This is a **Payload CMS plugin** (v3.x) that enables video uploads directly to s
 - **React**: v19.1+
 - **TypeScript**: v5.7+ (strict mode enabled)
 - **Node.js**: ^18.20.2 || >=20.9.0
+- **pnpm**: ^9 || ^10 (required package manager)
 - **Build Tools**: SWC (transpilation), TypeScript (type declarations only)
 - **Testing**: Vitest (integration), Playwright (E2E)
 - **Storage Adapters**: `@payloadcms/storage-s3`, `@payloadcms/storage-r2`
@@ -83,6 +84,52 @@ class MyProviderAdapter extends StreamAdapter {
 }
 ```
 
+**Per-Collection Adapter Configuration:**
+
+The plugin supports different adapters for different collections:
+
+```typescript
+import { videoStream } from 'payload-video-stream'
+import { cloudflareStreamAdapter } from 'payload-video-stream/adapters'
+
+export default buildConfig({
+  plugins: [
+    videoStream({
+      // Default adapter for all collections
+      defaultAdapter: cloudflareStreamAdapter({
+        accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+        apiToken: process.env.CLOUDFLARE_API_TOKEN,
+      }),
+
+      collections: {
+        // Use default adapter
+        media: true,
+
+        // Override with custom adapter for this collection
+        privateVideos: {
+          adapter: cloudflareStreamAdapter({
+            accountId: process.env.CLOUDFLARE_PRIVATE_ACCOUNT_ID,
+            apiToken: process.env.CLOUDFLARE_PRIVATE_API_TOKEN,
+            requireSignedURLs: true,
+          }),
+        },
+      },
+    }),
+  ],
+})
+```
+
+**Type Definition:**
+
+```typescript
+type VideoStreamConfig = {
+  collections?: Partial<Record<CollectionSlug, { adapter?: StreamAdapter } | true>>
+  defaultAdapter?: StreamAdapter
+  getSignedUrl?: (url: string) => Promise<string>
+  disabled?: boolean
+}
+```
+
 ### 3. Hook-Based Lifecycle Management
 
 Two key `afterOperation` hooks are injected:
@@ -116,6 +163,59 @@ The `stream` field group uses Payload's `admin.condition` feature:
 - Only visible for video MIME types (`video/*`)
 - Placed in sidebar for supplementary information
 - Read-only fields for system-managed data
+
+**Complete Stream Field Structure:**
+
+```typescript
+// From src/fields/stream.ts
+{
+  name: 'stream',
+  type: 'group',
+  admin: {
+    position: 'sidebar',
+    condition: (data) => data?.mimeType?.startsWith('video/'),
+  },
+  fields: [
+    {
+      name: 'videoId',
+      type: 'text',
+      admin: { readOnly: true },
+      // Provider's unique video identifier
+    },
+    {
+      name: 'status',
+      type: 'text',
+      admin: { readOnly: true },
+      // Values: 'pending', 'ready', 'error'
+    },
+    {
+      name: 'streamed',
+      type: 'checkbox',
+      admin: { readOnly: true, hidden: true },
+      // Internal flag tracking copy completion
+    },
+    {
+      name: 'metadata',
+      type: 'textarea',
+      admin: { readOnly: true, hidden: true },
+      // JSON string of provider-specific metadata
+    },
+  ],
+}
+```
+
+**TypeScript Note**: The `stream` field is dynamically injected and may not appear in generated Payload types. Cast when accessing:
+
+```typescript
+const stream = doc.stream as {
+  videoId?: string
+  status?: string
+  thumbnailUrl?: string
+  playbackUrl?: string
+  streamed?: boolean
+  metadata?: string
+}
+```
 
 ## Code Organization
 
@@ -172,9 +272,28 @@ import { streamField } from './fields/stream.ts'
 ```json
 {
   ".": "./src/index.ts",
-  "./client": "./src/exports/client.ts",
-  "./rsc": "./src/exports/rsc.ts"
+  "./adapters": "./src/adapters/index.ts"
 }
+```
+
+**Note**: `/client` and `/rsc` exports are planned for future releases (see Future Considerations).
+
+**Usage in Published Package:**
+
+```typescript
+// Main plugin
+import { videoStream } from 'payload-video-stream'
+
+// Adapters
+import { cloudflareStreamAdapter } from 'payload-video-stream/adapters'
+```
+
+**Usage in Development:**
+
+```typescript
+// Use .js extensions (ESM requirement)
+import { videoStream } from './src/index.js'
+import { cloudflareStreamAdapter } from './src/adapters/cloudflareStream.js'
 ```
 
 **What to Export:**
@@ -239,24 +358,87 @@ When creating a new adapter:
 
 ### Signed URL Handling
 
-The plugin supports private S3 buckets requiring signed URLs:
+The plugin supports private S3 buckets requiring signed URLs. When configured with `@payloadcms/storage-s3` or `@payloadcms/storage-r2`, the storage adapter exposes a signed URL endpoint.
+
+**How It Works:**
+
+1. Plugin checks if `getSignedUrl` is configured (adapter-level takes precedence)
+2. Makes a fetch request to the S3 storage's signed URL endpoint
+3. Passes the signed URL to the streaming adapter for video copy
+4. Signed URL is temporary and used only for the copy operation
+
+**Configuration:**
 
 ```typescript
-// Plugin-level config
+import { videoStream } from 'payload-video-stream'
+import { cloudflareStreamAdapter } from 'payload-video-stream/adapters'
+import { s3Storage } from '@payloadcms/storage-s3'
+
+export default buildConfig({
+  plugins: [
+    // S3 storage with signed URL generation
+    s3Storage({
+      collections: {
+        media: true,
+      },
+      bucket: process.env.S3_BUCKET,
+      config: {
+        credentials: {
+          /* ... */
+        },
+        region: process.env.S3_REGION,
+      },
+    }),
+
+    // Video streaming with signed URL support
+    videoStream({
+      collections: { media: true },
+      defaultAdapter: cloudflareStreamAdapter({
+        accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+        apiToken: process.env.CLOUDFLARE_API_TOKEN,
+      }),
+
+      // Plugin-level: applies to all collections
+      getSignedUrl: async (url) => {
+        const response = await fetch(`${url}?payload-s3-signature=true`)
+        if (!response.ok) throw new Error('Failed to get signed URL')
+        return response.url
+      },
+    }),
+  ],
+})
+```
+
+**Adapter-Level Override:**
+
+```typescript
 videoStream({
-  getSignedUrl: async (url) => getSignedS3Url(url),
+  collections: {
+    privateVideos: {
+      adapter: cloudflareStreamAdapter({
+        // Adapter-level: only for this collection
+        getSignedUrl: async (url) => {
+          // Custom signed URL logic
+          return getCustomSignedUrl(url)
+        },
+      }),
+    },
+  },
 })
-
-// Adapter-level config
-cloudflareStreamAdapter({
-  getSignedUrl: async (url) => getSignedS3Url(url),
-})
-
-// Usage in hooks
-const videoUrl = pluginOptions.getSignedUrl ? await pluginOptions.getSignedUrl(doc.url) : doc.url
 ```
 
 **Priority**: Adapter-level `getSignedUrl` takes precedence over plugin-level.
+
+**Fetch Mechanism in Hooks:**
+
+```typescript
+// From src/hooks/afterOperation.ts
+const videoUrl = adapter.getSignedUrl
+  ? await adapter.getSignedUrl(doc.url)
+  : pluginOptions.getSignedUrl
+    ? await pluginOptions.getSignedUrl(doc.url)
+    : doc.url
+```
 
 ## Testing Conventions
 
@@ -288,10 +470,42 @@ describe('Feature', () => {
 - Plugin integration with Payload
 - Field injection verification
 - Hook execution logic
-- Custom endpoint functionality
 - Collection creation and seeding
+- Video copy workflow
+- Status update mechanism
 
-**Database**: Uses in-memory MongoDB (`mongodb-memory-server`) for isolation.
+**Database Configuration:**
+
+- **Development**: PostgreSQL adapter (`@payloadcms/db-postgres`) for actual dev work
+- **Tests**: MongoDB Memory Server (`mongodb-memory-server`) when `process.env.NODE_ENV === 'test'`
+- Conditional setup in `dev/payload.config.ts` switches between databases
+
+**Current Test Status:**
+
+⚠️ **Note**: The existing tests in `dev/int.spec.ts` contain template/example code from a plugin starter that tests non-existent features (custom endpoints, plugin-created collections). These should be updated to test actual plugin functionality:
+
+**Recommended Test Cases:**
+
+```typescript
+// Test field injection
+test('should inject stream field into collections', async () => {
+  const mediaConfig = payload.collections['media'].config
+  const streamField = mediaConfig.fields.find((f) => f.name === 'stream')
+  expect(streamField).toBeDefined()
+})
+
+// Test hook registration
+test('should register afterOperation hooks', async () => {
+  const hooks = payload.collections['media'].config.hooks?.afterOperation
+  expect(hooks).toBeDefined()
+  expect(hooks?.length).toBeGreaterThan(0)
+})
+
+// Test conditional field display
+test('stream field should only show for video MIME types', async () => {
+  // Test admin.condition logic
+})
+```
 
 ### E2E Tests (Playwright)
 
@@ -357,6 +571,37 @@ pnpm build:swc              # Transpile with SWC
 - SWC handles transpilation (20x faster than tsc)
 - Output format: ES6 modules in `dist/`
 - Non-code assets copied with `copyfiles` utility
+- Pre-publish runs: `pnpm clean && pnpm build` (via `prepublishOnly` script)
+
+**SWC Configuration** (`.swcrc`):
+
+```json
+{
+  "jsc": {
+    "target": "esnext",
+    "parser": {
+      "syntax": "typescript",
+      "tsx": true,
+      "dts": true
+    },
+    "transform": {
+      "react": {
+        "runtime": "automatic"
+      }
+    }
+  },
+  "module": {
+    "type": "es6"
+  }
+}
+```
+
+**Why SWC?**
+
+- 20x faster than TypeScript compiler for transpilation
+- Handles JSX/TSX transformation automatically
+- Preserves ESM module format
+- TypeScript still used for type checking and declaration generation
 
 ### Dependency Management
 
@@ -395,6 +640,51 @@ pnpm build:swc              # Transpile with SWC
 ```
 
 ## Plugin-Specific Guidance
+
+### Admin Thumbnail Integration
+
+The plugin supports displaying video thumbnails from streaming providers in the Payload admin UI:
+
+```typescript
+import type { CollectionConfig } from 'payload'
+
+export const Media: CollectionConfig = {
+  slug: 'media',
+  upload: {
+    adminThumbnail: ({ doc }) => {
+      // Access the stream field's thumbnail URL
+      return ((doc?.stream as { thumbnailUrl?: string })?.thumbnailUrl as string) || null
+    },
+  },
+}
+```
+
+**Key Points:**
+
+- The `adminThumbnail` callback receives the document with the `stream` field
+- Cast to appropriate type since `stream` is dynamically added by the plugin
+- Return `null` if no thumbnail is available (fallback to default)
+- Thumbnails are automatically generated by streaming providers (e.g., Cloudflare Stream)
+
+**Accessing Stream Metadata:**
+
+```typescript
+// The stream field structure:
+type StreamField = {
+  videoId: string // Provider's video ID
+  status: string // 'pending' | 'ready' | 'error'
+  thumbnailUrl?: string // Provider's thumbnail URL
+  playbackUrl?: string // Provider's playback URL
+  streamed: boolean // Whether video was successfully copied
+  metadata?: string // JSON string of provider-specific metadata
+}
+
+// Access in hooks or components:
+const stream = doc.stream as StreamField
+if (stream?.status === 'ready') {
+  const videoUrl = stream.playbackUrl
+}
+```
 
 ### Config Mutation Safety
 
@@ -502,6 +792,8 @@ copyVideoToStream(doc).catch((err) => {
 
 ## Development Workflow
 
+**Current Branch**: `feat/stream-preview` (feature branch for video preview enhancements)
+
 ### Local Development
 
 1. **Start dev server**: `pnpm dev`
@@ -568,11 +860,25 @@ copyVideoToStream(doc).catch((err) => {
 
 ### Planned Features
 
-- `/client` export: Client-side utilities for video player integration
-- `/rsc` export: React Server Components for admin UI
-- Additional providers: Mux, AWS MediaConvert, Azure Media Services
-- Webhook support: Listen for provider status updates
-- Batch processing: Handle multiple videos in single operation
+- **`/client` export**: Client-side utilities for video player integration
+  - Currently declared in `package.json` exports but `src/exports/client.ts` does not exist
+  - Will provide React hooks and components for video playback
+  - Example: `useStreamVideo()`, `<StreamPlayer />` component
+- **`/rsc` export**: React Server Components for admin UI
+  - Currently declared in `package.json` exports but `src/exports/rsc.ts` does not exist
+  - Will provide server-side rendering utilities
+  - Example: Enhanced thumbnail components, video metadata displays
+- **Additional streaming providers**:
+  - Mux (https://mux.com)
+  - AWS MediaConvert
+  - Azure Media Services
+  - Custom RTMP endpoints
+- **Webhook support**: Listen for provider status updates instead of polling
+  - Real-time status updates when video processing completes
+  - Automatic metadata sync on provider events
+- **Batch processing**: Handle multiple videos in single operation
+  - Bulk upload to streaming service
+  - Queue management for large video libraries
 
 ### Extension Points
 
@@ -593,6 +899,7 @@ When adding new capabilities:
 
 ---
 
-**Last Updated**: November 21, 2025
-**Plugin Version**: 3.x
+**Last Updated**: November 22, 2025
+**Plugin Version**: 3.x (published as `payload-video-stream` v1.0.13)
 **Payload Compatibility**: 3.64.0+
+**Repository**: https://github.com/webowodev/payload-video-stream

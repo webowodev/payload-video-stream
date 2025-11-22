@@ -4,7 +4,7 @@ import { s3Storage } from '@payloadcms/storage-s3'
 import { MongoMemoryReplSet } from 'mongodb-memory-server'
 import path from 'path'
 import { buildConfig } from 'payload'
-import { videoStream } from 'payload-video-streaming'
+import { videoStream } from 'payload-video-stream'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
@@ -98,10 +98,10 @@ const buildConfigWithMemoryDB = async () => {
         defaultAdapter: cloudflareStreamAdapter({
           accountId: process.env.CLOUDFLARE_STREAM_ACCOUNT_ID || '',
           apiToken: process.env.CLOUDFLARE_STREAM_API_TOKEN || '',
-          requiresSignedURLs:
-            process.env.CLOUDFLARE_STREAM_REQUIRES_SIGNED_URLS === 'true' || false,
+          customerSubdomain: process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN || '',
+          requireSignedURLs: true,
         }),
-        requiresSignedURLs: true,
+        requireSignedURLs: true,
       }),
     ],
     secret: process.env.PAYLOAD_SECRET || 'test-secret_key',

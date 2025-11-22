@@ -1,4 +1,4 @@
-import type { CollectionAfterOperationHook } from 'payload'
+import type { CollectionAfterOperationHook, CollectionBeforeDeleteHook } from 'payload'
 import type { StreamAdapter } from 'src/adapters/streamAdapter.js'
 
 export const updateStatusHook = (
@@ -22,7 +22,9 @@ export const updateStatusHook = (
         data: {
           stream: {
             error: status.result?.status?.errorReasonText || '',
+            provider: adapter.providerName || '',
             readyToStream: status.result?.readyToStream,
+            requireSignedURLs: status.result?.requireSignedURLs || false,
             thumbnailUrl: status.result?.thumbnail || '',
           },
         },
@@ -37,7 +39,7 @@ export const updateStatusHook = (
 export const copyVideo = (
   adapter: StreamAdapter,
   collectionSlug: string,
-  requiresSignedURLs = false,
+  requireSignedURLs = false,
 ): CollectionAfterOperationHook => {
   return async ({ operation, req, result }) => {
     if (
@@ -49,8 +51,8 @@ export const copyVideo = (
       try {
         let videoUrl = `${req.protocol}//${req.host}${result.url}`
 
-        if (requiresSignedURLs) {
-          // get signed URL for video.
+        if (requireSignedURLs) {
+          // get signed URL for video
           const signedVideoUrl = await fetch(`${req.protocol}//${req.host}${result.url}`, {
             headers: {
               accept: 'application/json',
@@ -76,7 +78,9 @@ export const copyVideo = (
             collection: collectionSlug,
             data: {
               stream: {
+                provider: adapter.providerName || '',
                 readyToStream: response.result.readyToStream,
+                requireSignedURLs: response.result.requireSignedURLs || false,
                 thumbnailUrl: response.result.thumbnail,
                 videoId: response.result.videoId,
               },
@@ -85,10 +89,34 @@ export const copyVideo = (
           })
         }
       } catch (e) {
-        console.log('Error copying video to streaming service:', e)
+        req.payload.logger.error({ err: e, msg: 'Error copying video to streaming service' })
       }
     }
 
     return result
+  }
+}
+
+// hook to delete video before delete hook
+export const deleteVideo = (
+  adapter: StreamAdapter,
+  collectionSlug: string,
+): CollectionBeforeDeleteHook => {
+  return async ({ id, req }) => {
+    // fetch the document to get the stream videoId
+    const doc = await req.payload.findByID({
+      id,
+      collection: collectionSlug,
+      req,
+    })
+
+    if (doc?.stream?.videoId) {
+      try {
+        // delete video from streaming service
+        await adapter.delete(doc.stream.videoId)
+      } catch (e) {
+        req.payload.logger.error({ err: e, msg: 'Error deleting video from streaming service' })
+      }
+    }
   }
 }

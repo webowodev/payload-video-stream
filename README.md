@@ -77,7 +77,8 @@ export default buildConfig({
       defaultAdapter: cloudflareStreamAdapter({
         accountId: process.env.CLOUDFLARE_STREAM_ACCOUNT_ID || '',
         apiToken: process.env.CLOUDFLARE_STREAM_API_TOKEN || '',
-        requiresSignedURLs: true // OPTIONAL: enable this if you enabled the signed downloads on your storage so the plugin will use the signed s3 url to the cloudflare stream copy video url function
+        customerSubdomain: process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN || '',
+        requireSignedURLs: true // OPTIONAL: enable this if you enabled the signed downloads on your storage so the plugin will use the signed s3 url to the cloudflare stream copy video url function
       }),
     }),
   ],
@@ -92,6 +93,7 @@ Create a `.env` file with your streaming provider credentials:
 ```env
 CLOUDFLARE_STREAM_API_TOKEN=your_cloudflare_api_token
 CLOUDFLARE_STREAM_ACCOUNT_ID=your_cloudflare_account_id
+NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN=https://customer-<YOUR_CUSTOMER_ID>.cloudflarestream.com
 ```
 
 ### 3. Create a Video Collection
@@ -132,7 +134,7 @@ type VideoStreamConfig = {
   enabled?: boolean
   defaultAdapter: StreamAdapter
   disabled?: boolean
-  requiresSignedURLs?: boolean
+  requireSignedURLs?: boolean
 }
 ```
 
@@ -158,7 +160,7 @@ To use Cloudflare Stream:
 1. Clone the repository:
 ```bash
 git clone https://github.com/webowodev/payload-video-stream.git
-cd payload-video-streaming
+cd payload-video-stream
 ```
 
 2. Install dependencies:
@@ -178,6 +180,7 @@ DATABASE_URI=postgres://root:secret@127.0.0.1:5432/videostream
 PAYLOAD_SECRET=your-secret-key
 CLOUDFLARE_STREAM_API_TOKEN=your_cloudflare_api_token
 CLOUDFLARE_STREAM_ACCOUNT_ID=your_cloudflare_account_id
+NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN=https://customer-<YOUR_CUSTOMER_ID>.cloudflarestream.com
 ```
 
 5. Start the development server:
@@ -190,7 +193,7 @@ The dev server will be available at [http://localhost:3000](http://localhost:300
 ### Project Structure
 
 ```
-payload-video-streaming/
+payload-video-stream/
 ├── src/
 │   ├── index.ts              # Main plugin export
 │   ├── adapters/
