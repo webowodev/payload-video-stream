@@ -77,6 +77,7 @@ export default buildConfig({
       defaultAdapter: cloudflareStreamAdapter({
         accountId: process.env.CLOUDFLARE_STREAM_ACCOUNT_ID || '',
         apiToken: process.env.CLOUDFLARE_STREAM_API_TOKEN || '',
+        customerSubdomain: process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN || '',
         requireSignedURLs: true // OPTIONAL: enable this if you enabled the signed downloads on your storage so the plugin will use the signed s3 url to the cloudflare stream copy video url function
       }),
     }),
@@ -92,6 +93,7 @@ Create a `.env` file with your streaming provider credentials:
 ```env
 CLOUDFLARE_STREAM_API_TOKEN=your_cloudflare_api_token
 CLOUDFLARE_STREAM_ACCOUNT_ID=your_cloudflare_account_id
+NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN=https://customer-<YOUR_CUSTOMER_ID>.cloudflarestream.com
 ```
 
 ### 3. Create a Video Collection
@@ -178,6 +180,7 @@ DATABASE_URI=postgres://root:secret@127.0.0.1:5432/videostream
 PAYLOAD_SECRET=your-secret-key
 CLOUDFLARE_STREAM_API_TOKEN=your_cloudflare_api_token
 CLOUDFLARE_STREAM_ACCOUNT_ID=your_cloudflare_account_id
+NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN=https://customer-<YOUR_CUSTOMER_ID>.cloudflarestream.com
 ```
 
 5. Start the development server:
