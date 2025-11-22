@@ -1,5 +1,6 @@
 import type { StreamAdapter } from './streamAdapter.js'
-import type { CopyVideoRequest, StreamResponse } from './types.js'
+import type { CopyVideoRequest, StreamFieldData, StreamResponse } from './types.js'
+
 type CloudflareStreamAPIResponse = {
   errors?: { code: number; message: string }[]
   messages?: string[]
@@ -14,7 +15,7 @@ type CloudflareStreamAPIResponse = {
       hls?: string
     }
     readyToStream: boolean
-    requiresSignedURLs?: boolean
+    requireSignedURLs?: boolean
     size?: number
     status?: {
       errorReasonCode?: string
@@ -56,13 +57,22 @@ class CloudflareStreamAdapter implements StreamAdapter {
   private readonly accountId: string
   private readonly apiToken: string
   private readonly baseUrl: string
-  private readonly requiresSignedURLs: boolean
+  private readonly customerSubdomain: string
+  private readonly requireSignedURLs: boolean
 
-  constructor(apiToken: string, accountId: string, requiresSignedURLs = false) {
+  readonly providerName = 'cloudflare_stream'
+
+  constructor(
+    apiToken: string,
+    accountId: string,
+    customerSubdomain: string,
+    requireSignedURLs = false,
+  ) {
     this.apiToken = apiToken
     this.accountId = accountId
     this.baseUrl = 'https://api.cloudflare.com/client/v4'
-    this.requiresSignedURLs = requiresSignedURLs
+    this.requireSignedURLs = requireSignedURLs
+    this.customerSubdomain = customerSubdomain
   }
 
   /**
@@ -72,7 +82,6 @@ class CloudflareStreamAdapter implements StreamAdapter {
    * @returns
    */
   async copyVideo(params: CopyVideoRequest): Promise<StreamResponse> {
-    console.log('CloudflareStreamAdapter: copyVideo called with params', params)
     const url = `${this.baseUrl}/accounts/${this.accountId}/stream/copy`
 
     const response = await fetch(url, {
@@ -91,11 +100,89 @@ class CloudflareStreamAdapter implements StreamAdapter {
     }
 
     // If configured, mark the video as requiring signed URLs
-    if (this.requiresSignedURLs && body.result) {
-      return await this.markRequiresSignedURLs(body.result.uid)
+    if (this.requireSignedURLs && body.result) {
+      return await this.markRequireSignedURLs(body.result.uid)
     }
 
     return streamResponseFromCloudflareStreamAPI(body)
+  }
+
+  /**
+   * Deletes a video by its ID
+   *
+   * @param videoId
+   */
+  async delete(videoId: string): Promise<void> {
+    const url = `${this.baseUrl}/accounts/${this.accountId}/stream/${videoId}`
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${this.apiToken}`,
+      },
+      method: 'DELETE',
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete video: ${response.statusText}`)
+    }
+  }
+
+  /**
+   * Render the video player HTML by video ID
+   *
+   * @param videoId
+   * @returns
+   */
+  async getHTMLVideoPlayer(stream: StreamFieldData): Promise<null | string> {
+    const { requireSignedURLs, videoId } = stream
+
+    let token = videoId
+
+    if (requireSignedURLs) {
+      const signedToken = await this.getSignedToken(videoId)
+      token = signedToken || videoId
+    }
+
+    const videoUrl = `${this.customerSubdomain}/${token}/iframe`
+
+    return `<iframe
+        allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+        frameBorder="0"
+        sandbox="allow-scripts allow-same-origin"
+        src="${videoUrl}"
+        title="Example Stream video"
+        width="100%"
+      />`
+  }
+
+  /**
+   * Get the signed token by video ID
+   *
+   * @param videoId
+   * @returns
+   */
+  async getSignedToken(videoId: string): Promise<null | string> {
+    const url = `${this.baseUrl}/accounts/${this.accountId}/stream/${videoId}/token`
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${this.apiToken}`,
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to get signed token: ${response.statusText}`)
+    }
+
+    const body = await response.json()
+
+    if (body.result && body.result.token) {
+      return body.result.token as string
+    }
+
+    return null
   }
 
   /**
@@ -106,8 +193,6 @@ class CloudflareStreamAdapter implements StreamAdapter {
    */
   async getStatus(videoId: string): Promise<StreamResponse> {
     const url = `${this.baseUrl}/accounts/${this.accountId}/stream/${videoId}`
-
-    console.log('CloudflareStreamAdapter: getStatus called for videoId', videoId, url)
 
     const response = await fetch(url, {
       headers: {
@@ -131,18 +216,19 @@ class CloudflareStreamAdapter implements StreamAdapter {
    * @param videoId
    * @returns
    */
-  async markRequiresSignedURLs(videoId: string): Promise<StreamResponse> {
+  async markRequireSignedURLs(videoId: string): Promise<StreamResponse> {
     const url = `${this.baseUrl}/accounts/${this.accountId}/stream/${videoId}`
 
     const response = await fetch(url, {
       body: JSON.stringify({
-        requiresSignedURLs: true,
+        requireSignedURLs: true,
+        uid: videoId,
       }),
       headers: {
         Authorization: `Bearer ${this.apiToken}`,
         'Content-Type': 'application/json',
       },
-      method: 'PATCH',
+      method: 'POST',
     })
 
     if (!response.ok) {
@@ -151,18 +237,22 @@ class CloudflareStreamAdapter implements StreamAdapter {
 
     const body = await response.json()
 
-    return streamResponseFromCloudflareStreamAPI(body)
+    const result = streamResponseFromCloudflareStreamAPI(body)
+
+    return result
   }
 }
 
 export const cloudflareStreamAdapter = ({
   accountId,
   apiToken,
-  requiresSignedURLs,
+  customerSubdomain,
+  requireSignedURLs,
 }: {
   accountId: string
   apiToken: string
-  requiresSignedURLs?: boolean
+  customerSubdomain: string
+  requireSignedURLs?: boolean
 }): StreamAdapter => {
-  return new CloudflareStreamAdapter(apiToken, accountId, requiresSignedURLs)
+  return new CloudflareStreamAdapter(apiToken, accountId, customerSubdomain, requireSignedURLs)
 }

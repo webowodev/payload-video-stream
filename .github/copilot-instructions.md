@@ -1,4 +1,4 @@
-# GitHub Copilot Instructions: payload-video-streaming
+# GitHub Copilot Instructions: payload-video-stream
 
 ## Project Overview
 
@@ -110,7 +110,7 @@ export default buildConfig({
           adapter: cloudflareStreamAdapter({
             accountId: process.env.CLOUDFLARE_PRIVATE_ACCOUNT_ID,
             apiToken: process.env.CLOUDFLARE_PRIVATE_API_TOKEN,
-            requiresSignedURLs: true,
+            requireSignedURLs: true,
           }),
         },
       },

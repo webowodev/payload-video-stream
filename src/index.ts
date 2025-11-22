@@ -3,7 +3,7 @@ import type { CollectionSlug, Config } from 'payload'
 import type { StreamAdapter } from './adapters/streamAdapter.js'
 
 import { streamField } from './fields/stream.js'
-import { copyVideo, updateStatusHook } from './hooks/afterOperation.js'
+import { copyVideo, deleteVideo, updateStatusHook } from './hooks/afterOperation.js'
 
 export type VideoStreamConfig = {
   /**
@@ -12,7 +12,7 @@ export type VideoStreamConfig = {
   collections?: Partial<Record<CollectionSlug, { adapter?: StreamAdapter } | true>>
   defaultAdapter: StreamAdapter
   disabled?: boolean
-  requiresSignedURLs?: boolean
+  requireSignedURLs?: boolean
 }
 
 export const videoStream =
@@ -37,7 +37,7 @@ export const videoStream =
               : defaultAdapter
 
           // inject stream field
-          collection.fields.push(streamField)
+          collection.fields.push(streamField({ adapter }))
 
           const afterOperationHooks = collection.hooks?.afterOperation || []
 
@@ -59,16 +59,27 @@ export const videoStream =
               // if the upload adapter requires signed URLs to access the video,
               // we need to fetch a signed URL before copying the video
               // e.g. S3 with private files
-              pluginOptions.requiresSignedURLs || false,
+              pluginOptions.requireSignedURLs || false,
             ),
           )
 
           // END INJECT AFTER OPERATION COLLECTION HOOKS
 
+          // START INJECT BEFORE DELETE COLLECTION HOOKS
+          const beforeDeleteHooks = collection.hooks?.beforeDelete || []
+
+          // inject delete video hook
+          beforeDeleteHooks.push(
+            // this will delete the video from the streaming service before deleting the document
+            deleteVideo(adapter, collectionSlug),
+          )
+          // END INJECT BEFORE DELETE COLLECTION HOOKS
+
           // re-assign hooks
           collection.hooks = {
             ...collection.hooks,
             afterOperation: afterOperationHooks,
+            beforeDelete: beforeDeleteHooks,
           }
         }
       }

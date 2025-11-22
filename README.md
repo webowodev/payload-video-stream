@@ -77,7 +77,7 @@ export default buildConfig({
       defaultAdapter: cloudflareStreamAdapter({
         accountId: process.env.CLOUDFLARE_STREAM_ACCOUNT_ID || '',
         apiToken: process.env.CLOUDFLARE_STREAM_API_TOKEN || '',
-        requiresSignedURLs: true // OPTIONAL: enable this if you enabled the signed downloads on your storage so the plugin will use the signed s3 url to the cloudflare stream copy video url function
+        requireSignedURLs: true // OPTIONAL: enable this if you enabled the signed downloads on your storage so the plugin will use the signed s3 url to the cloudflare stream copy video url function
       }),
     }),
   ],
@@ -132,7 +132,7 @@ type VideoStreamConfig = {
   enabled?: boolean
   defaultAdapter: StreamAdapter
   disabled?: boolean
-  requiresSignedURLs?: boolean
+  requireSignedURLs?: boolean
 }
 ```
 
@@ -158,7 +158,7 @@ To use Cloudflare Stream:
 1. Clone the repository:
 ```bash
 git clone https://github.com/webowodev/payload-video-stream.git
-cd payload-video-streaming
+cd payload-video-stream
 ```
 
 2. Install dependencies:
@@ -190,7 +190,7 @@ The dev server will be available at [http://localhost:3000](http://localhost:300
 ### Project Structure
 
 ```
-payload-video-streaming/
+payload-video-stream/
 ├── src/
 │   ├── index.ts              # Main plugin export
 │   ├── adapters/

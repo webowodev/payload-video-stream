@@ -20,7 +20,7 @@ export type StreamResponse = {
       hls?: string
     }
     readyToStream: boolean
-    requiresSignedURLs?: boolean
+    requireSignedURLs?: boolean
     size?: number
     status?: {
       errorReasonCode?: string
@@ -32,4 +32,13 @@ export type StreamResponse = {
     videoId: string
   }
   success: boolean
+}
+
+export type StreamFieldData = {
+  error: string
+  provider: string
+  readyToStream: boolean
+  requireSignedURLs: boolean
+  thumbnailUrl: string
+  videoId: string
 }
