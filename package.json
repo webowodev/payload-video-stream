@@ -5,6 +5,25 @@
   "license": "MIT",
   "type": "module",
   "repository": "https://github.com/webowodev/payload-video-stream",
+  "keywords": [
+    "payload",
+    "payload-cms",
+    "payload-plugin",
+    "video",
+    "video-stream",
+    "video-streaming",
+    "cloudflare-stream",
+    "cloudflare",
+    "video-upload",
+    "cms",
+    "content-management",
+    "media",
+    "streaming",
+    "video-processing",
+    "s3",
+    "r2",
+    "upload"
+  ],
   "exports": {
     ".": {
       "import": "./src/index.ts",
