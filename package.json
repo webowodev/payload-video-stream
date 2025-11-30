@@ -1,6 +1,6 @@
 {
   "name": "payload-video-stream",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "Payload CMS plugin for streaming video uploads to cloud providers like Cloudflare Stream",
   "license": "MIT",
   "type": "module",
