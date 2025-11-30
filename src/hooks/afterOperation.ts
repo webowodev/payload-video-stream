@@ -13,7 +13,7 @@ export const updateStatusHook = (
       result.stream.videoId
     ) {
       // if there is a stream uid but not ready to stream, fetch latest status
-      const status = await adapter.getStatus(result.stream.videoId)
+      const response = await adapter.getStatus(result.stream.videoId)
 
       // update video document with latest stream status
       await req.payload.update({
@@ -21,11 +21,16 @@ export const updateStatusHook = (
         collection: collectionSlug,
         data: {
           stream: {
-            error: status.result?.status?.errorReasonText || '',
+            durationInSeconds: response.result?.durationInSeconds,
+            error: response.result?.status?.errorReasonText || '',
+            height: response.result?.height,
             provider: adapter.providerName || '',
-            readyToStream: status.result?.readyToStream,
-            requireSignedURLs: status.result?.requireSignedURLs || false,
-            thumbnailUrl: status.result?.thumbnail || '',
+            readyToStream: response.result?.readyToStream,
+            readyToStreamAt: response.result?.readyToStreamAt,
+            requireSignedURLs: response.result?.requireSignedURLs || false,
+            size: response.result?.size,
+            thumbnailUrl: response.result?.thumbnail || '',
+            width: response.result?.width,
           },
         },
         req,

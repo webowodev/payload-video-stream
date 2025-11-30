@@ -6,6 +6,11 @@ type CloudflareStreamAPIResponse = {
   messages?: string[]
   result: {
     created?: string
+    duration?: number
+    input?: {
+      height: number
+      width: number
+    }
     meta?: {
       [key: string]: boolean | null | number | string
     }
@@ -15,6 +20,7 @@ type CloudflareStreamAPIResponse = {
       hls?: string
     }
     readyToStream: boolean
+    readyToStreamAt?: string
     requireSignedURLs?: boolean
     size?: number
     status?: {
@@ -39,6 +45,8 @@ const streamResponseFromCloudflareStreamAPI = (
     result: response.result
       ? {
           ...response.result,
+          durationInSeconds: response.result.duration,
+          height: response.result.input?.height,
           meta: response.result.meta
             ? {
                 name:
@@ -46,7 +54,9 @@ const streamResponseFromCloudflareStreamAPI = (
                 ...response.result.meta,
               }
             : undefined,
+          readyToStreamAt: response.result.readyToStreamAt,
           videoId: response.result.uid,
+          width: response.result.input?.width,
         }
       : undefined,
     success: response.success,
@@ -58,6 +68,7 @@ class CloudflareStreamAdapter implements StreamAdapter {
   private readonly apiToken: string
   private readonly baseUrl: string
   private readonly customerSubdomain: string
+  private readonly generateDownloads: { audio?: boolean; video?: boolean } | boolean
   private readonly requireSignedURLs: boolean
 
   readonly providerName = 'cloudflare_stream'
@@ -67,12 +78,53 @@ class CloudflareStreamAdapter implements StreamAdapter {
     accountId: string,
     customerSubdomain: string,
     requireSignedURLs = false,
+    generateDownloads: { audio?: boolean; video?: boolean } | boolean = true,
   ) {
     this.apiToken = apiToken
     this.accountId = accountId
     this.baseUrl = 'https://api.cloudflare.com/client/v4'
     this.requireSignedURLs = requireSignedURLs
+    this.generateDownloads = generateDownloads
     this.customerSubdomain = customerSubdomain
+  }
+
+  /**
+   * Generate download links for a video or audio
+   *
+   * @param videoId
+   */
+  private async generateDownloadLinks(videoId: string): Promise<void> {
+    const url = `${this.baseUrl}/accounts/${this.accountId}/stream/${videoId}/downloads`
+
+    const urls = []
+
+    if (this.isGenerateAudioDownloadEnabled) {
+      urls.push(`${url}/audio`)
+    }
+
+    if (this.isGenerateVideoDownloadEnabled) {
+      urls.push(`${url}`)
+    }
+
+    try {
+      await Promise.all(
+        urls.map(async (endpoint) => {
+          const response = await fetch(endpoint, {
+            headers: {
+              Authorization: `Bearer ${this.apiToken}`,
+              'Content-Type': 'application/json',
+            },
+            method: 'POST',
+          })
+
+          if (!response.ok) {
+            throw new Error(`Failed to generate download link: ${response.statusText}`)
+          }
+        }),
+      )
+    } catch (error) {
+      console.error('Error generating download links:', error)
+    }
   }
 
   /**
@@ -207,7 +259,17 @@ class CloudflareStreamAdapter implements StreamAdapter {
 
     const body = await response.json()
 
-    return streamResponseFromCloudflareStreamAPI(body)
+    const result = streamResponseFromCloudflareStreamAPI(body)
+
+    // Generate download links if enabled
+    if (
+      (this.isGenerateAudioDownloadEnabled || this.isGenerateVideoDownloadEnabled) &&
+      result.result?.readyToStream
+    ) {
+      await this.generateDownloadLinks(videoId)
+    }
+
+    return result
   }
 
   /**
@@ -241,18 +303,40 @@ class CloudflareStreamAdapter implements StreamAdapter {
 
     return result
   }
+
+  private get isGenerateAudioDownloadEnabled(): boolean {
+    if (typeof this.generateDownloads === 'boolean') {
+      return this.generateDownloads
+    }
+    return this.generateDownloads.audio === true
+  }
+
+  private get isGenerateVideoDownloadEnabled(): boolean {
+    if (typeof this.generateDownloads === 'boolean') {
+      return this.generateDownloads
+    }
+    return this.generateDownloads.video === true
+  }
 }
 
 export const cloudflareStreamAdapter = ({
   accountId,
   apiToken,
   customerSubdomain,
+  generateDownloads,
   requireSignedURLs,
 }: {
   accountId: string
   apiToken: string
   customerSubdomain: string
+  generateDownloads?: { audio?: boolean; video?: boolean } | boolean
   requireSignedURLs?: boolean
 }): StreamAdapter => {
-  return new CloudflareStreamAdapter(apiToken, accountId, customerSubdomain, requireSignedURLs)
+  return new CloudflareStreamAdapter(
+    apiToken,
+    accountId,
+    customerSubdomain,
+    requireSignedURLs,
+    generateDownloads ?? true,
+  )
 }
