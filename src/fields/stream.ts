@@ -30,7 +30,6 @@ export const streamField = ({ adapter }: { adapter: StreamAdapter }): Field => {
         type: 'text',
         admin: {
           hidden: true,
-
           readOnly: true,
         },
       },
@@ -48,7 +47,6 @@ export const streamField = ({ adapter }: { adapter: StreamAdapter }): Field => {
         type: 'date',
         admin: {
           hidden: true,
-
           readOnly: true,
         },
       },
@@ -57,7 +55,6 @@ export const streamField = ({ adapter }: { adapter: StreamAdapter }): Field => {
         type: 'number',
         admin: {
           hidden: true,
-
           readOnly: true,
         },
       },
@@ -66,7 +63,6 @@ export const streamField = ({ adapter }: { adapter: StreamAdapter }): Field => {
         type: 'number',
         admin: {
           hidden: true,
-
           readOnly: true,
         },
       },
@@ -75,7 +71,6 @@ export const streamField = ({ adapter }: { adapter: StreamAdapter }): Field => {
         type: 'number',
         admin: {
           hidden: true,
-
           readOnly: true,
         },
       },
@@ -92,7 +87,6 @@ export const streamField = ({ adapter }: { adapter: StreamAdapter }): Field => {
         type: 'text',
         admin: {
           hidden: true,
-
           readOnly: true,
         },
       },
@@ -118,5 +112,3 @@ export const streamField = ({ adapter }: { adapter: StreamAdapter }): Field => {
     ],
   }
 }
-
-// generate types from field

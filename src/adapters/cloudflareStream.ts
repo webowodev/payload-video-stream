@@ -337,6 +337,6 @@ export const cloudflareStreamAdapter = ({
     accountId,
     customerSubdomain,
     requireSignedURLs,
-    generateDownloads,
+    generateDownloads ?? true,
   )
 }
