@@ -50,6 +50,7 @@ const buildConfigWithMemoryDB = async () => {
             // Return the URL from your custom `externalUrl` field
             return ((doc?.stream as { thumbnailUrl?: string })?.thumbnailUrl as string) || null
           },
+          disableLocalStorage: true,
           staticDir: path.resolve(dirname, 'media'),
         },
       },

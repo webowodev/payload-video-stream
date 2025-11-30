@@ -13,6 +13,8 @@ export type StreamResponse = {
   messages?: string[]
   result?: {
     created?: string
+    durationInSeconds?: number
+    height?: number
     meta?: StreamVideoMeta
     modified?: string
     playback?: {
@@ -20,6 +22,7 @@ export type StreamResponse = {
       hls?: string
     }
     readyToStream: boolean
+    readyToStreamAt?: string
     requireSignedURLs?: boolean
     size?: number
     status?: {
@@ -30,15 +33,22 @@ export type StreamResponse = {
     }
     thumbnail?: string
     videoId: string
+    width?: number
   }
   success: boolean
 }
 
 export type StreamFieldData = {
+  downloadable?: boolean
+  durationInSeconds?: number
   error: string
+  height?: number
   provider: string
   readyToStream: boolean
+  readyToStreamAt?: string
   requireSignedURLs: boolean
+  size?: number
   thumbnailUrl: string
   videoId: string
+  width?: number
 }

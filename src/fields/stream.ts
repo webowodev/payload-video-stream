@@ -21,6 +21,7 @@ export const streamField = ({ adapter }: { adapter: StreamAdapter }): Field => {
         name: 'videoId',
         type: 'text',
         admin: {
+          hidden: true,
           readOnly: true,
         },
       },
@@ -28,6 +29,8 @@ export const streamField = ({ adapter }: { adapter: StreamAdapter }): Field => {
         name: 'thumbnailUrl',
         type: 'text',
         admin: {
+          hidden: true,
+
           readOnly: true,
         },
       },
@@ -41,9 +44,55 @@ export const streamField = ({ adapter }: { adapter: StreamAdapter }): Field => {
         defaultValue: false,
       },
       {
+        name: 'readyToStreamAt',
+        type: 'date',
+        admin: {
+          hidden: true,
+
+          readOnly: true,
+        },
+      },
+      {
+        name: 'durationInSeconds',
+        type: 'number',
+        admin: {
+          hidden: true,
+
+          readOnly: true,
+        },
+      },
+      {
+        name: 'width',
+        type: 'number',
+        admin: {
+          hidden: true,
+
+          readOnly: true,
+        },
+      },
+      {
+        name: 'height',
+        type: 'number',
+        admin: {
+          hidden: true,
+
+          readOnly: true,
+        },
+      },
+      {
+        name: 'size',
+        type: 'number',
+        admin: {
+          hidden: true,
+          readOnly: true,
+        },
+      },
+      {
         name: 'provider',
         type: 'text',
         admin: {
+          hidden: true,
+
           readOnly: true,
         },
       },
@@ -61,7 +110,6 @@ export const streamField = ({ adapter }: { adapter: StreamAdapter }): Field => {
         admin: {
           description:
             'If enabled, the video stream URLs will require signed URLs for access, enhancing security.',
-          // hidden: true,
           readOnly: true,
         },
         defaultValue: false,
