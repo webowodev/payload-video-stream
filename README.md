@@ -147,6 +147,92 @@ To use Cloudflare Stream:
 3. Create an API token with Stream permissions
 4. Add credentials to your environment variables
 
+## Background Jobs & Status Polling
+
+The plugin automatically manages video processing status through Payload's job queue system. When you upload a video, the plugin continuously polls the streaming provider to check when the video is ready for playback.
+
+### Automatic Task Injection
+
+The plugin automatically injects background tasks into your Payload configuration. Each streaming adapter gets its own task that runs on the **`payloadVideoStream`** queue:
+
+- **Task Name**: `payloadStreamUpdateStatusFor{AdapterName}` (e.g., `payloadStreamUpdateStatusForCloudflareStream`)
+- **Queue Name**: `payloadVideoStream`
+- **Behavior**: Automatically registered and managed by the plugin
+
+```ts
+// The plugin injects tasks like this (happens automatically)
+config.jobs = {
+  ...config.jobs,
+  tasks: [
+    ...(config.jobs?.tasks || []),
+    updateStreamStatusTask(cloudflareStreamAdapter),
+  ],
+}
+```
+
+### How Status Updates Work
+
+1. **Video Upload**: When you upload a video to a collection with the plugin enabled:
+   - The video is sent to your streaming provider (e.g., Cloudflare Stream)
+   - The `stream` field is populated with metadata (`videoId`, `status: 'pending'`)
+
+2. **Background Polling**: The plugin creates a background task that:
+   - Runs periodically on the `payloadVideoStream` queue
+   - Queries the streaming provider for the current video status
+   - Updates the document in Payload with the latest status
+
+3. **Self-Requeuing**: If the video is still processing:
+   - The task automatically re-queues itself on the `payloadVideoStream` queue
+   - Retries with exponential backoff (max 3 retries)
+   - Continues until the video reaches `ready` status
+
+4. **Status Lifecycle**:
+   - `pending` → Video is being processed by the provider
+   - `ready` → Video processing complete, ready for playback
+   - `error` → Processing failed
+
+### Monitoring Status Updates
+
+You can track video status in several ways:
+
+**In the Payload Admin UI:**
+- Go to your video collection (e.g., `/admin/collections/videos`)
+- The `stream.status` field shows the current status
+- Refresh to see the latest status from the background job
+
+**Programmatically:**
+```ts
+const video = await payload.findByID({
+  collection: 'videos',
+  id: videoId,
+})
+
+const streamStatus = (video.stream as { status?: string })?.status
+// 'pending', 'ready', or 'error'
+```
+
+### Queue Configuration
+
+The `payloadVideoStream` queue is automatically created and configured. No additional setup is required. However, you can monitor queue status through:
+
+- Payload's admin UI (Jobs panel, if enabled)
+- Your job queue provider's dashboard
+- Application logs
+
+### Task Input Parameters
+
+When the plugin queues a status update task, it passes:
+- `documentId`: The ID of the video document to update
+- `collectionSlug`: The collection containing the video
+
+Example task payload:
+```json
+{
+  "documentId": "abc123",
+  "collectionSlug": "videos"
+}
+```
+
 ## Development
 
 ### Prerequisites

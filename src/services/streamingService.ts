@@ -1,4 +1,5 @@
 import type { JsonObject, PayloadRequest, TypeWithID } from 'payload'
+import type { StreamResponse } from 'src/adapters/types.js'
 
 import type { StreamAdapter } from '../adapters/streamAdapter.js'
 
@@ -39,13 +40,13 @@ export const streamingService = ({
      *
      * @param param0
      */
-    async updateStatus({
+    updateStatus: async ({
       collectionSlug,
       doc,
     }: {
       collectionSlug: string
       doc: JsonObject & TypeWithID
-    }): Promise<void> {
+    }): Promise<null | StreamResponse> => {
       try {
         req.payload.logger.info({
           msg: 'Fetching latest stream status for videoId: ' + doc.stream.videoId,
@@ -85,8 +86,11 @@ export const streamingService = ({
             'Video document updated with latest stream status for videoId: ' + doc.stream.videoId,
           stream: doc.stream,
         })
+
+        return response
       } catch (error) {
         req.payload.logger.error({ err: error, msg: 'Error fetching stream status' })
+        return null
       }
     },
 
@@ -201,6 +205,34 @@ export const streamingService = ({
         })
       } catch (e) {
         req.payload.logger.error({ err: e, msg: 'Error deleting video from streaming service' })
+      }
+    },
+
+    queueUpdateStatusTask: async ({
+      collectionSlug,
+      documentId,
+    }: {
+      collectionSlug: string
+      documentId: string
+    }): Promise<void> => {
+      try {
+        req.payload.logger.info({ collectionSlug, documentId, msg: 'Queueing update status task' })
+
+        const task = `payloadStreamUpdateStatusFor${adapter.providerName}`
+
+        // queue the update status task
+        await req.payload.jobs.queue({
+          input: {
+            collectionSlug,
+            documentId,
+          },
+          queue: 'payloadVideoStream',
+          task,
+        })
+
+        req.payload.logger.info({ documentId, msg: 'Update status task queued', task })
+      } catch (error) {
+        req.payload.logger.error({ err: error, msg: 'Error queueing update status task' })
       }
     },
   }

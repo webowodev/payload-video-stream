@@ -4,6 +4,7 @@ import type { StreamAdapter } from './adapters/streamAdapter.js'
 
 import { streamField } from './fields/stream.js'
 import { copyVideo, deleteVideo, updateStatusHook } from './hooks/afterOperation.js'
+import { updateStreamStatusTask } from './tasks/updateStreamStatus.js'
 
 export type VideoStreamConfig = {
   /**
@@ -83,6 +84,31 @@ export const videoStream =
           }
         }
       }
+    }
+
+    const getAllAdapters = () => {
+      const adapters: StreamAdapter[] = [pluginOptions.defaultAdapter]
+      if (collections) {
+        for (const collectionSlug in collections) {
+          const collectionOptions = collections[collectionSlug]
+          if (typeof collectionOptions != 'boolean' && collectionOptions?.adapter) {
+            adapters.push(collectionOptions.adapter)
+          } else {
+            adapters.push(defaultAdapter)
+          }
+        }
+      }
+      return adapters
+    }
+
+    // inject jobs
+    config.jobs = {
+      ...config.jobs,
+      // inject tasks
+      tasks: [
+        ...(config.jobs?.tasks || []),
+        ...getAllAdapters().map((adapter) => updateStreamStatusTask(adapter)),
+      ],
     }
 
     /**

@@ -55,6 +55,31 @@ const buildConfigWithMemoryDB = async () => {
       {
         slug: 'media',
         fields: [],
+        hooks: {
+          afterOperation: [
+            async ({ operation, req, result }) => {
+              if (operation === 'findByID') {
+                req.payload.logger.info({
+                  msg: `Media document afterChange hook executed for document ID: ${result.id}`,
+                })
+
+                // fire example queued job task
+                const task = await req.payload.jobs.queue({
+                  input: {
+                    collectionSlug: 'media',
+                    documentId: result.id as string,
+                  },
+                  task: 'testTask',
+                })
+
+                req.payload.logger.info({
+                  msg: `Queued job task fired from media afterChange hook for document ID: ${result.id}`,
+                  task,
+                })
+              }
+            },
+          ],
+        },
         upload: {
           adminThumbnail: ({ doc }) => {
             // Return the URL from your custom `externalUrl` field
@@ -72,6 +97,35 @@ const buildConfigWithMemoryDB = async () => {
     }),
     editor: lexicalEditor(),
     email: testEmailAdapter,
+    jobs: {
+      tasks: [
+        {
+          slug: 'testTask',
+          handler: ({ req }) => {
+            req.payload.logger.info({ msg: 'Test task executed' })
+
+            return {
+              output: {
+                message: 'Test task completed successfully',
+              },
+            }
+          },
+          inputSchema: [
+            {
+              name: 'collectionSlug',
+              type: 'text',
+              required: true,
+            },
+            {
+              name: 'documentId',
+              type: 'text',
+              required: true,
+            },
+          ],
+          retries: 3,
+        },
+      ],
+    },
     onInit: async (payload) => {
       await seed(payload)
     },

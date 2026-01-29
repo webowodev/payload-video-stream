@@ -37,11 +37,19 @@ export const copyVideo = (
       !result.stream.videoId &&
       result.mimeType?.startsWith('video/')
     ) {
+      const stream = streamingService({ adapter, req })
       setTimeout(async () => {
-        await streamingService({ adapter, req }).copyVideoToStreamingPlatform({
+        // copy video to streaming platform
+        await stream.copyVideoToStreamingPlatform({
           collectionSlug,
           doc: result,
           requireSignedURLs,
+        })
+
+        // queue update status task
+        await stream.queueUpdateStatusTask({
+          collectionSlug,
+          documentId: result.id as string,
         })
       }, 1000) // delay to allow initial create operation to complete
     }
