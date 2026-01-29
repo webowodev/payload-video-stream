@@ -12,10 +12,20 @@ export const updateStatusHook = (
       result.mimeType?.startsWith('video/') &&
       result.stream.videoId
     ) {
+      req.payload.logger.info({
+        msg: 'Fetching latest stream status for videoId: ' + result.stream.videoId,
+      })
+
       // if there is a stream uid but not ready to stream, fetch latest status
       const response = await adapter.getStatus(result.stream.videoId)
 
       // update video document with latest stream status
+      req.payload.logger.info({
+        id: result.id,
+        msg: 'Updating video document with latest stream status: collection=' + collectionSlug,
+        response,
+      })
+
       await req.payload.update({
         id: result.id,
         collection: collectionSlug,
@@ -34,6 +44,12 @@ export const updateStatusHook = (
           },
         },
         req,
+      })
+
+      req.payload.logger.info({
+        msg:
+          'Video document updated with latest stream status for videoId: ' + result.stream.videoId,
+        stream: result.stream,
       })
     }
 
@@ -141,16 +157,28 @@ export const deleteVideo = (
 ): CollectionBeforeDeleteHook => {
   return async ({ id, req }) => {
     // fetch the document to get the stream videoId
+    req.payload.logger.info({ id, msg: 'Fetching document to delete video from streaming service' })
+
     const doc = await req.payload.findByID({
       id,
       collection: collectionSlug,
       req,
     })
 
+    // delete video from streaming service if videoId exists
     if (doc?.stream?.videoId) {
       try {
+        req.payload.logger.info({
+          msg: 'Deleting video from streaming service',
+          stream: doc.stream,
+        })
         // delete video from streaming service
         await adapter.delete(doc.stream.videoId)
+
+        req.payload.logger.info({
+          msg: 'Video deleted from streaming service',
+          stream: doc.stream,
+        })
       } catch (e) {
         req.payload.logger.error({ err: e, msg: 'Error deleting video from streaming service' })
       }
