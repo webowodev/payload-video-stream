@@ -5,13 +5,35 @@ import React from 'react'
 import styles from './preview.module.css'
 
 type Props = {
+  error?: string
   html: null | string
   readyToStream?: boolean
 }
-export function StreamPreviewer({ html, readyToStream }: Props) {
+export function StreamPreviewer({ error, html, readyToStream }: Props) {
   return (
     <div className={styles.container}>
-      {readyToStream ? (
+      {error ? (
+        <div className={styles.error}>
+          <div className={styles.errorIcon}>
+            <svg
+              fill="none"
+              height="48"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              width="48"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" x2="12" y1="8" y2="12" />
+              <line x1="12" x2="12.01" y1="16" y2="16" />
+            </svg>
+          </div>
+          <p className={styles.errorText}>Video processing failed</p>
+          <p className={styles.errorMessage}>{error}</p>
+        </div>
+      ) : readyToStream ? (
         html ? (
           <div dangerouslySetInnerHTML={{ __html: html }} />
         ) : (

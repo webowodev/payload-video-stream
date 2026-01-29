@@ -42,6 +42,7 @@ export type StreamFieldData = {
   downloadable?: boolean
   durationInSeconds?: number
   error: string
+  errorAt?: string
   height?: number
   provider: string
   readyToStream: boolean

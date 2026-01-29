@@ -99,6 +99,14 @@ export const streamField = ({ adapter }: { adapter: StreamAdapter }): Field => {
         },
       },
       {
+        name: 'errorAt',
+        type: 'date',
+        admin: {
+          hidden: true,
+          readOnly: true,
+        },
+      },
+      {
         name: 'requireSignedURLs',
         type: 'checkbox',
         admin: {

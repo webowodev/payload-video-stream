@@ -46,7 +46,7 @@ async function StreamPreview(props: Props) {
     html = (await props.adapter.getHTMLVideoPlayer(stream)) || '<p>Video preview not available.</p>'
   }
 
-  return <StreamPreviewer html={html} readyToStream={stream?.readyToStream} />
+  return <StreamPreviewer error={stream?.error} html={html} readyToStream={stream?.readyToStream} />
 }
 
 export function getStreamPreviewField(props: Props) {

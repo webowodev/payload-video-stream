@@ -35,6 +35,11 @@
       "types": "./src/adapters/index.ts",
       "default": "./src/adapters/index.ts"
     },
+    "./services": {
+      "import": "./src/services/index.ts",
+      "types": "./src/services/index.ts",
+      "default": "./src/services/index.ts"
+    },
     "./client": {
       "import": "./src/exports/client.ts",
       "types": "./src/exports/client.ts",
@@ -71,7 +76,7 @@
     "test:int": "vitest"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.2.0",
+    "@eslint/eslintrc": "^3.3.3",
     "@payloadcms/db-mongodb": "3.64.0",
     "@payloadcms/db-postgres": "3.64.0",
     "@payloadcms/db-sqlite": "3.64.0",
@@ -84,28 +89,28 @@
     "@playwright/test": "1.56.1",
     "@swc-node/register": "1.10.9",
     "@swc/cli": "0.6.0",
-    "@types/node": "^22.19.1",
+    "@types/node": "^22.19.7",
     "@types/react": "19.1.8",
     "@types/react-dom": "19.1.6",
     "copyfiles": "2.4.1",
     "cross-env": "^7.0.3",
-    "eslint": "^9.23.0",
+    "eslint": "^9.39.2",
     "eslint-config-next": "15.4.7",
-    "graphql": "^16.8.1",
+    "graphql": "^16.12.0",
     "mongodb-memory-server": "10.1.4",
     "next": "15.4.7",
-    "open": "^10.1.0",
+    "open": "^10.2.0",
     "payload": "3.64.0",
-    "prettier": "^3.4.2",
+    "prettier": "^3.8.1",
     "qs-esm": "7.0.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "rimraf": "3.0.2",
     "sharp": "0.34.2",
-    "sort-package-json": "^2.10.0",
+    "sort-package-json": "^2.15.1",
     "typescript": "5.7.3",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.1.2"
+    "vitest": "^3.2.4"
   },
   "peerDependencies": {
     "payload": "^3.64.0"
@@ -125,6 +130,11 @@
         "import": "./dist/adapters/index.js",
         "types": "./dist/adapters/index.d.ts",
         "default": "./dist/adapters/index.js"
+      },
+      "./services": {
+        "import": "./dist/services/index.js",
+        "types": "./dist/services/index.d.ts",
+        "default": "./dist/services/index.js"
       },
       "./client": {
         "import": "./dist/exports/client.js",

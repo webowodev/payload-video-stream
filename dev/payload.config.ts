@@ -40,7 +40,17 @@ const buildConfigWithMemoryDB = async () => {
     collections: [
       {
         slug: 'posts',
-        fields: [],
+        fields: [
+          {
+            name: 'image',
+            type: 'upload',
+            relationTo: 'media',
+          },
+          {
+            name: 'title',
+            type: 'text',
+          },
+        ],
       },
       {
         slug: 'media',
