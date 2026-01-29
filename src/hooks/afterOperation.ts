@@ -68,6 +68,8 @@ export const copyVideo = (
           videoUrl = signedVideoUrl
         }
 
+        req.payload.logger.info({ msg: 'Copying video to streaming service', videoUrl })
+
         // copy video to stream
         const response = await adapter.copyVideo({
           meta: {
@@ -78,23 +80,48 @@ export const copyVideo = (
 
         // update video document with stream uid and thumbnail url
         if (response.result) {
+          req.payload.logger.info({ msg: 'Video copied to streaming service', response })
+
+          const stream = {
+            provider: adapter.providerName || '',
+            readyToStream: response.result.readyToStream,
+            requireSignedURLs: response.result.requireSignedURLs || false,
+            thumbnailUrl: response.result.thumbnail,
+            videoId: response.result.videoId,
+          }
+
+          req.payload.logger.info({
+            msg:
+              'Updating video document with streaming info: collection=' +
+              collectionSlug +
+              ', id=' +
+              result.id,
+            stream,
+          })
+
           await req.payload.update({
             id: result.id,
             collection: collectionSlug,
             data: {
-              stream: {
-                provider: adapter.providerName || '',
-                readyToStream: response.result.readyToStream,
-                requireSignedURLs: response.result.requireSignedURLs || false,
-                thumbnailUrl: response.result.thumbnail,
-                videoId: response.result.videoId,
-              },
+              stream,
             },
             req,
           })
         }
       } catch (e) {
         req.payload.logger.error({ err: e, msg: 'Error copying video to streaming service' })
+
+        // update video document with error
+        await req.payload.update({
+          id: result.id,
+          collection: collectionSlug,
+          data: {
+            stream: {
+              error: 'Error copying video to streaming service',
+            },
+          },
+          req,
+        })
       }
     }
 
