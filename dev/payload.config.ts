@@ -100,6 +100,7 @@ const buildConfigWithMemoryDB = async () => {
           accountId: process.env.CLOUDFLARE_STREAM_ACCOUNT_ID || '',
           apiToken: process.env.CLOUDFLARE_STREAM_API_TOKEN || '',
           customerSubdomain: process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN || '',
+          generateDownloads: true,
           requireSignedURLs: true,
         }),
         requireSignedURLs: true,

@@ -54,6 +54,10 @@ export const copyVideo = (
       result.mimeType?.startsWith('video/')
     ) {
       try {
+        req.payload.logger.info({
+          msg: 'Preparing to copy video to streaming service',
+          result,
+        })
         let videoUrl = `${req.protocol}//${req.host}${result.url}`
 
         if (requireSignedURLs) {
@@ -64,7 +68,8 @@ export const copyVideo = (
               cookie: req.headers.get('cookie') || '',
             },
             method: 'GET',
-          }).then((r) => r.url)
+            redirect: 'manual',
+          }).then((r) => r.headers.get('location') || '')
           videoUrl = signedVideoUrl
         }
 
