@@ -40,11 +40,33 @@ const buildConfigWithMemoryDB = async () => {
     collections: [
       {
         slug: 'posts',
-        fields: [],
+        fields: [
+          {
+            name: 'image',
+            type: 'upload',
+            relationTo: 'media',
+          },
+          {
+            name: 'title',
+            type: 'text',
+          },
+        ],
       },
       {
         slug: 'media',
         fields: [],
+        hooks: {
+          afterChange: [
+            async ({ doc, operation, payload }) => {
+              console.log('Media document changed: ' + operation, doc)
+
+              // Example: Log the stream URL if available
+              if (doc?.stream?.url) {
+                console.log('Stream URL:', doc.stream.url)
+              }
+            },
+          ],
+        },
         upload: {
           adminThumbnail: ({ doc }) => {
             // Return the URL from your custom `externalUrl` field
