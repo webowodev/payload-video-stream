@@ -8,11 +8,16 @@ const getVideoUrl = async (
   doc: JsonObject & TypeWithID,
   requireSignedURLs?: boolean,
 ): Promise<string> => {
-  let videoUrl = `${req.protocol}//${req.host}${doc.url}`
+  let videoUrl = doc.url
+
+  // when videoUrl doesn't start with protocol e.g http or https, prepend host
+  if (!/^https?:\/\//i.test(videoUrl)) {
+    videoUrl = `${req.protocol}//${req.host}${doc.url}`
+  }
 
   if (requireSignedURLs) {
     // get signed URL for video
-    const signedVideoUrl = await fetch(`${req.protocol}//${req.host}${doc.url}`, {
+    const signedVideoUrl = await fetch(videoUrl, {
       headers: {
         accept: 'application/json',
         cookie: req.headers.get('cookie') || '',
