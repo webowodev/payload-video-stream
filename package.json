@@ -77,15 +77,15 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
-    "@payloadcms/db-mongodb": "3.64.0",
-    "@payloadcms/db-postgres": "3.64.0",
-    "@payloadcms/db-sqlite": "3.64.0",
+    "@payloadcms/db-mongodb": "3.78.0",
+    "@payloadcms/db-postgres": "3.78.0",
+    "@payloadcms/db-sqlite": "3.78.0",
     "@payloadcms/eslint-config": "3.9.0",
-    "@payloadcms/next": "3.64.0",
-    "@payloadcms/richtext-lexical": "3.64.0",
-    "@payloadcms/storage-r2": "3.64.0",
-    "@payloadcms/storage-s3": "3.64.0",
-    "@payloadcms/ui": "3.64.0",
+    "@payloadcms/next": "3.78.0",
+    "@payloadcms/richtext-lexical": "3.78.0",
+    "@payloadcms/storage-r2": "3.78.0",
+    "@payloadcms/storage-s3": "3.78.0",
+    "@payloadcms/ui": "3.78.0",
     "@playwright/test": "1.56.1",
     "@swc-node/register": "1.10.9",
     "@swc/cli": "0.6.0",
@@ -98,9 +98,9 @@
     "eslint-config-next": "15.4.7",
     "graphql": "^16.12.0",
     "mongodb-memory-server": "10.1.4",
-    "next": "15.4.7",
+    "next": "15.4.10",
     "open": "^10.2.0",
-    "payload": "3.64.0",
+    "payload": "3.78.0",
     "prettier": "^3.8.1",
     "qs-esm": "7.0.2",
     "react": "19.1.0",
@@ -113,7 +113,7 @@
     "vitest": "^3.2.4"
   },
   "peerDependencies": {
-    "payload": "^3.64.0"
+    "payload": "^3.78.0"
   },
   "engines": {
     "node": "^18.20.2 || >=20.9.0",
